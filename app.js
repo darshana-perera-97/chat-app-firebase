@@ -14,10 +14,15 @@ const chatMessages = document.getElementById('chat-messages');
 const userName = document.getElementById('user-name');
 const userAvatar = document.getElementById('user-avatar');
 const loading = document.getElementById('loading');
+const emojiBtn = document.getElementById('emoji-btn');
+const attachBtn = document.getElementById('attach-btn');
+const typingIndicator = document.getElementById('typing-indicator');
 
 // Global variables
 let currentUser = null;
 let unsubscribeMessages = null;
+let typingTimeout = null;
+let isTyping = false;
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,6 +49,12 @@ function setupEventListeners() {
     // Chat functionality
     logoutBtn.addEventListener('click', handleLogout);
     messageForm.addEventListener('submit', handleSendMessage);
+    
+    // Message input enhancements
+    messageInput.addEventListener('input', handleTyping);
+    messageInput.addEventListener('keydown', handleKeyDown);
+    emojiBtn.addEventListener('click', handleEmojiClick);
+    attachBtn.addEventListener('click', handleAttachmentClick);
 }
 
 // Authentication Functions
@@ -209,6 +220,12 @@ async function handleSendMessage(e) {
         
         await db.collection('messages').add(messageData);
         messageInput.value = '';
+        
+        // Stop typing indicator
+        stopTyping();
+        
+        // Clear input focus
+        messageInput.blur();
     } catch (error) {
         showError('Failed to send message: ' + error.message);
     }
@@ -249,6 +266,61 @@ function displayMessage(messageData) {
     messageDiv.appendChild(content);
     
     chatMessages.appendChild(messageDiv);
+}
+
+// Enhanced Message Input Functions
+function handleTyping() {
+    if (!isTyping) {
+        isTyping = true;
+        // You can implement typing indicator broadcast here
+        // For now, we'll just show local typing state
+    }
+    
+    // Clear existing timeout
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+    }
+    
+    // Set new timeout to stop typing indicator
+    typingTimeout = setTimeout(() => {
+        stopTyping();
+    }, 1000);
+}
+
+function stopTyping() {
+    isTyping = false;
+    if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        typingTimeout = null;
+    }
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        messageForm.dispatchEvent(new Event('submit'));
+    }
+}
+
+function handleEmojiClick() {
+    // Simple emoji picker - you can enhance this with a proper emoji library
+    const emojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '💯', '✨', '😎', '🤔'];
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    
+    const cursorPos = messageInput.selectionStart;
+    const textBefore = messageInput.value.substring(0, cursorPos);
+    const textAfter = messageInput.value.substring(cursorPos);
+    
+    messageInput.value = textBefore + randomEmoji + textAfter;
+    messageInput.focus();
+    
+    // Set cursor position after emoji
+    messageInput.setSelectionRange(cursorPos + randomEmoji.length, cursorPos + randomEmoji.length);
+}
+
+function handleAttachmentClick() {
+    // You can implement file upload functionality here
+    showError('File attachment feature coming soon! 🚀');
 }
 
 function formatTime(date) {
